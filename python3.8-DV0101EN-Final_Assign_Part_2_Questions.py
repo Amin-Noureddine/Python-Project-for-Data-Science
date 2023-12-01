@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 import dash
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
 import pandas as pd
-import plotly.graph_objs as go
 import plotly.express as px
 
 # Load the data using pandas
@@ -15,49 +17,49 @@ app = dash.Dash(__name__)
 # Set the title of the dashboard
 app.title = "Automobile Statistics Dashboard"
 
-#---------------------------------------------------------------------------------
 # Create the dropdown menu options
 dropdown_options = [
     {'label': 'Yearly Statistics', 'value': 'Yearly Statistics'},
     {'label': 'Recession Period Statistics', 'value': 'Recession Period Statistics'}
 ]
-# List of years 
+
+# List of years
 year_list = [i for i in range(1980, 2024, 1)]
-#---------------------------------------------------------------------------------------
+
 # Create the layout of the app
 app.layout = html.Div([
-    #TASK 2.1 Add title to the dashboard
-    html.H1("Automobile Sales Statistics Dashboard", style={'textAlign': 'left', 'color': "#000000", 'font-size': '24px'}),#May include style for title
-    html.Div([#TASK 2.2: Add two dropdown menus
+    html.H1("Automobile Sales Statistics Dashboard", style={'textAlign': 'left', 'color': "#000000", 'font-size': '24px'}),
+    html.Div([
         html.Label("Select Statistics:"),
         dcc.Dropdown(
             id='dropdown_statistics',
-            options= [
-                    {'label': 'Yearly Statistics', 'value': 'Yearly Statistics'},
-                    {'label': 'Recession Period Statistics', 'value': 'Recession Period Statistics'}
-                    ],
+            options=dropdown_options,
             placeholder='Select a report type'
         )
     ]),
-    html.Div([html.Label("Select Year:"), dcc.Dropdown(
+    html.Div([
+        html.Label("Select Year:"),
+        dcc.Dropdown(
             id='select_year',
             options=[{'label': i, 'value': i} for i in year_list],
             placeholder='Select a year',
-        )]),
-    html.Div([#TASK 2.3: Add a division for output display
-    html.Div(id='output-container', className='chart-gird', style = {'display':'flex'})])
+        )
+    ]),
+    html.Div([  # TASK 2.3: Add a division for output display
+        html.Div(id='output-container', className='chart-gird', style={'display': 'flex'})
+    ])
 ])
 
-#TASK 2.4: Creating Callbacks
+# TASK 2.4: Creating Callbacks
 # Define the callback function to update the input container based on the selected statistics
 @app.callback(
     Output(component_id='select_year', component_property='disabled'),
-    Input(component_id='dropdown_statistics',component_property='value'))
-
+    Input(component_id='dropdown_statistics', component_property='value')
+)
 def update_input_container(dropdown_statistics):
-    if dropdown_statistics =='Yearly Statistics': 
+    if dropdown_statistics == 'Yearly Statistics':
         return False
-    else: 
+    else:
         return True
 
 # Callback for plotting
@@ -85,31 +87,33 @@ def update_output_container(select_year, dropdown_statistics):
         R_chart4 = dcc.Graph(figure=px.bar(unemploy, x='unemployment_rate', y='Automobile_Sales', color='Vehicle_Type', title='Effect of Unemployment Rate on Vehicle Type & Sales'))
 
         return [
-            html.Div(className='chart-item', children=[html.Div(R_chart1,className='chart'), html.Div(R_chart2,className='chart')]),
-            html.Div(className='chart-item', children=[html.Div(R_chart3,className='chart'), html.Div(R_chart4,className='chart')])
+            html.Div(className='chart-item', children=[html.Div(R_chart1, className='chart'), html.Div(R_chart2, className='chart')]),
+            html.Div(className='chart-item', children=[html.Div(R_chart3, className='chart'), html.Div(R_chart4, className='chart')])
         ]
 
-    elif dropdown_statistics == 'Yearly Statistics':
-        if select_year:
-            # Filter the data for the selected year
-            yearly_data = data[data['Year'] == select_year]
+    elif dropdown_statistics == 'Yearly Statistics' and select_year:
+        # Filter the data for the selected year
+        yearly_data = data[data['Year'] == select_year]
 
-            yas = yearly_data.groupby('Year')['Automobile_Sales'].mean().reset_index()
-            Y_chart1 = dcc.Graph(figure=px.line(yas, x='Year', y='Automobile_Sales', title='Yearly Automobile Sales',markers=True))
+        yas = yearly_data.groupby('Year')['Automobile_Sales'].mean().reset_index()
+        Y_chart1 = dcc.Graph(figure=px.line(yas, x='Year', y='Automobile_Sales', title='Yearly Automobile Sales', markers=True))
 
-            mas = yearly_data.groupby('Month')['Automobile_Sales'].mean().reset_index()
-            Y_chart2 = dcc.Graph(figure=px.line(mas, x='Month', y='Automobile_Sales', title='Monthly Automobile Sales'))
+        mas = yearly_data.groupby('Month')['Automobile_Sales'].mean().reset_index()
+        Y_chart2 = dcc.Graph(figure=px.line(mas, x='Month', y='Automobile_Sales', title='Monthly Automobile Sales'))
 
-            avr_vdata = yearly_data.groupby('Vehicle_Type')['Automobile_Sales'].mean().reset_index()
-            Y_chart3 = dcc.Graph(figure=px.bar(avr_vdata, x='Vehicle_Type', y='Automobile_Sales', title='Average Vehicles Sold by Vehicle Type'))
+        avr_vdata = yearly_data.groupby('Vehicle_Type')['Automobile_Sales'].mean().reset_index()
+        Y_chart3 = dcc.Graph(figure=px.bar(avr_vdata, x='Vehicle_Type', y='Automobile_Sales', title='Average Vehicles Sold by Vehicle Type'))
 
+        if 'Advertising_Expenditure' in yearly_data.columns:
             exp_data = yearly_data.groupby('Vehicle_Type')['Advertising_Expenditure'].mean().reset_index()
             Y_chart4 = dcc.Graph(figure=px.pie(exp_data, values='Advertising_Expenditure', names='Vehicle_Type', title='Total Advertisement Expenditure for each vehicle'))
+        else:
+            Y_chart4 = dcc.Graph(figure=px.pie(title='Total Advertisement Expenditure by Vehicle Type'))
 
-            return [
-                html.Div(className='chart-item', children=[html.Div(Y_chart1), html.Div(Y_chart2)]),
-                html.Div(className='chart-item', children=[html.Div(Y_chart3), html.Div(Y_chart4)])
-            ]
+        return [
+            html.Div(className='chart-item', children=[html.Div(Y_chart1), html.Div(Y_chart2)]),
+            html.Div(className='chart-item', children=[html.Div(Y_chart3), html.Div(Y_chart4)])
+        ]
 
     return None
 
